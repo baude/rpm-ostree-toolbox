@@ -168,7 +168,8 @@ class KojiBuilder(ImgBuilder):
         pass
 
 class AbstractImageFactoryTask(TaskBase):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        TaskBase.__init__(self, *args, **kwargs)
         self.ozoverrides = {}
         print "**********************"
         print "Abstract init called"
@@ -212,8 +213,6 @@ class AbstractImageFactoryTask(TaskBase):
         print "Oz overrides: {0}".format(self.ozoverrides)
 
     def formatKS(self, ksfile):
-        print "---------"
-        print vars(self)
         ks_basename = os.path.basename(ksfile)
         flattened_ks = os.path.join(self.workdir, ks_basename)
 
@@ -253,13 +252,15 @@ class AbstractImageFactoryTask(TaskBase):
         for subname, subval in substitutions.iteritems():
             print subname, subval
             ksdata = ksdata.replace('@%s@' % (subname, ), subval)
-        exit(1)
         return ksdata
 
 
 class ImageFactoryTask(AbstractImageFactoryTask):
+    def __init__(self, args, cmd, profile):
+        AbstractImageFactoryTask.__init__(self, args, cmd, profile)
+
     def create(self, imageoutputdir, name, ksfile, vkickstart, tdl, imageouttypes):
-        AbstractImageFactoryTask.__init__(self)
+        #AbstractImageFactoryTask.__init__(self)
         self._name = name
         self._tdl = tdl
         self._kickstart = ksfile
@@ -272,8 +273,6 @@ class ImageFactoryTask(AbstractImageFactoryTask):
             if not os.path.isfile(self.vksfile):
                 fail_msg("Unable to find the kickstart file {0} required to build vagrant images.  Consider passing --vkickstart to override.".format(self.vksfile))
         
-        imgfunc = ImageFunctions()
-
         os.mkdir(imageoutputdir)
 
         # FIXME : future version control related
@@ -294,13 +293,13 @@ class ImageFactoryTask(AbstractImageFactoryTask):
         else:
             httpd_port = self.ostree_port
 
-        imgfunc.checkoz("qcow2")
+        self.checkoz("qcow2")
         # The conditional handles the building of the images listed below
         if len(self.returnCommon(imageouttypes, ['rhevm', 'vsphere', 'kvm', 'raw', 'hyperv'])) > 0:
             ksdata = self.formatKS(ksfile)
             parameters =  { "install_script": ksdata,
                             "generate_icicle": False,
-                            "oz_overrides": json.dumps(imgfunc.ozoverrides)
+                            "oz_overrides": json.dumps(self.ozoverrides)
                           }
             print "Starting build"
             image = self.builder.build(template=open(self._tdl).read(), parameters=parameters)
@@ -348,7 +347,7 @@ class ImageFactoryTask(AbstractImageFactoryTask):
             ksdata = self.formatKS(self.vksfile)
             parameters =  { "install_script": ksdata,
                             "generate_icicle": False,
-                            "oz_overrides": json.dumps(imgfunc.ozoverrides)
+                            "oz_overrides": json.dumps(self.ozoverrides)
                            }
             vimage = self.builder.build(template=open(self._tdl).read(), parameters=parameters)
 
