@@ -126,7 +126,7 @@ class TaskBase(object):
         self.os_nr = "{0}-{1}".format(getattr(self, 'os_name'), getattr(self, 'release'))
         
         # Set kickstart file from args, else fallback to default
-        if cmd in ["imagefactory", "liveimage"]:
+        if cmd in ["imagefactory"]:
             if 'kickstart' in args and args.kickstart is not None:
                 setattr(self, 'kickstart', args.kickstart)
             else:
@@ -136,6 +136,14 @@ class TaskBase(object):
                     getattr(self, 'configdir'), defks)))
                 if not os.path.exists(getattr(self, 'kickstart')):
                     fail_msg("No kickstart was passed with -k and {0} does not exist".format(getattr(self, 'kickstart')))
+
+        # Set KS for liveimage
+        if cmd in ["liveimage"]:
+            if 'kickstart' in args and args.kickstart is not None:
+                setattr(self, 'kickstart', args.kickstart)
+            else:
+                fail_msg("No kickstart for creating a live image was passed with -k")
+                 
 
         # Set tdl from args, else fallback to default
         if cmd in ["imagefactory", "liveimage"] or ( cmd in ['installer'] and args.virt ):
